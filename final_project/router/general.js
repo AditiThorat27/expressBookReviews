@@ -1,4 +1,5 @@
 const express = require('express');
+const axios = require('axios');
 let books = require("./booksdb.js");
 let isValid = require("./auth_users.js").isValid;
 let users = require("./auth_users.js").users;
@@ -91,6 +92,71 @@ public_users.get('/review/:isbn',function (req, res) {
     return res.status(200).send(JSON.stringify(books[isbn].reviews, null, 4));
   }
   return res.status(404).json({ message: "Book not found for ISBN " + isbn });
+});
+
+
+/* ------------------------------------------------------------------
+   Tasks 10-13: the same features as Tasks 1-4, using Axios with
+   async/await or Promise callbacks. Each route below calls the
+   matching route above through Axios.
+------------------------------------------------------------------- */
+
+const BASE_URL = "http://localhost:5000";
+
+// The routes above send their JSON as text, so convert it back to an object when needed
+const toObject = (data) => (typeof data === 'string' ? JSON.parse(data) : data);
+
+// Pass an Axios error on to the client (keeps the original status, e.g. 404)
+const sendError = (res, error) => {
+  if (error.response) {
+    return res.status(error.response.status).json(error.response.data);
+  }
+  return res.status(500).json({ message: "Error fetching data", error: error.message });
+};
+
+// Task 10: Get the list of books using async-await with Axios
+public_users.get('/async/books', async (req, res) => {
+  try {
+    const response = await axios.get(`${BASE_URL}/`);
+    return res.status(200).send(JSON.stringify(toObject(response.data), null, 4));
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
+// Task 11: Get book details based on ISBN using Promise callbacks with Axios
+public_users.get('/async/isbn/:isbn', (req, res) => {
+  const isbn = encodeURIComponent(req.params.isbn);
+
+  axios.get(`${BASE_URL}/isbn/${isbn}`)
+    .then((response) => {
+      return res.status(200).send(JSON.stringify(toObject(response.data), null, 4));
+    })
+    .catch((error) => {
+      return sendError(res, error);
+    });
+});
+
+// Task 12: Get book details based on author using async-await with Axios
+public_users.get('/async/author/:author', async (req, res) => {
+  try {
+    const author = encodeURIComponent(req.params.author);
+    const response = await axios.get(`${BASE_URL}/author/${author}`);
+    return res.status(200).send(JSON.stringify(toObject(response.data), null, 4));
+  } catch (error) {
+    return sendError(res, error);
+  }
+});
+
+// Task 13: Get book details based on title using async-await with Axios
+public_users.get('/async/title/:title', async (req, res) => {
+  try {
+    const title = encodeURIComponent(req.params.title);
+    const response = await axios.get(`${BASE_URL}/title/${title}`);
+    return res.status(200).send(JSON.stringify(toObject(response.data), null, 4));
+  } catch (error) {
+    return sendError(res, error);
+  }
 });
 
 module.exports.general = public_users;
